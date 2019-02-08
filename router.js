@@ -1,9 +1,13 @@
-const port = 3000
+//command format is - node router.js <router_port , default = 4000>
+var router_port = 4000 //default
+if (process.argv.length == 3) {
+    router_port = process.argv[2]
+}
 
-var io = require('socket.io').listen(port);
-var recv_io = require('socket.io-client');
+var io = require('socket.io').listen(router_port)
+var recv_io = require('socket.io-client')
 
-
+console.log("ROUTER started on port : " + router_port)
 //last digit of panther ID
 const panther = 5
 
@@ -23,7 +27,7 @@ io.on('connection', function (socket) {
     //Accept packet and process
     socket.on('send_packet', function (packet) {
         console.log('send_packet new packet:', packet);
-        var recv_socket = recv_io.connect("http://"+packet.destination+":"+packet.port+"/", {
+        var recv_socket = recv_io.connect("http://"+packet.receiver_ip+":"+packet.receiver_port+"/", {
             reconnection: true
         });
 
@@ -37,10 +41,18 @@ io.on('connection', function (socket) {
 
     //Receive NACK
     socket.on('nack_router', function(nack_packet){
-        var nack_socket = recv_io.connect("http://"+nack_packet.destination+":"+nack_packet.dest_port+"/", {
+        var nack_socket = recv_io.connect("http://"+nack_packet.nack_destination+":"+nack_packet.nack_destination_port+"/", {
             reconnection: true
             });
             nack_socket.emit('nack_sender', nack_packet)
-            console.log("Sent NACK to Source seq: ", nack_packet.sequence_no)
+            console.log("Sent NACK to Source seq: ", nack_packet.nack_sequence_no)
+    })
+
+    socket.on('stats_end', function(stats) {
+        var stat_socket = recv_io.connect("http://"+stats.destination+":"+stats.port+"/", {
+            reconnection: true
+        });
+        stat_socket.emit('stats_end', stats)
+            
     })
 });
