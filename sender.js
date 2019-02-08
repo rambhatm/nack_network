@@ -1,5 +1,6 @@
 //command format is - node sender.js <num_packets> <sender_ip> <sender_port> <router_ip> <router_port> <receiver_ip> <receiver_port>
 // default assumes (sender, router, receiver) runs on localhost and port (3000, 4000, 5000)
+var data_size = 1024
 
 var num_packets = process.argv[2]
 var sender_ip = "127.0.0.1"
@@ -75,9 +76,9 @@ socket.on('connect', function () {
     
     send_interval = setInterval(function(){
         //generate some random data
-        data = generate_random_data_and_save(seq, 1024)
+        data = generate_random_data_and_save(seq, data_size)
         //send_packet
-        send_data_packet(seq, data, 1024)
+        send_data_packet(seq, data, data_size)
         
         if (++seq > num_packets) {
             clearInterval(send_interval)
@@ -92,12 +93,12 @@ nack_io.on('connection', function(nack_socket) {
         console.log("NACK RESEND packet #", nack_packet.nack_sequence_no)
         num_nacks++
         //send_packet
-        send_data_packet(nack_packet.nack_sequence_no, nack_window_data[nack_packet.nack_sequence_no], 1024)
+        send_data_packet(nack_packet.nack_sequence_no, nack_window_data[nack_packet.nack_sequence_no], data_size)
     })
 
     nack_socket.on('stats_end', function(stats) {
         time_taken_ms = performance.now() - start_ms
-        data_rate_mb_s = ( (1024 * (num_packets + num_nacks)) / (1024 * 1024) ) / (time_taken_ms / 1000) 
+        data_rate_mb_s = ( (data_size * (num_packets + num_nacks)) / (1024 * 1024) ) / (time_taken_ms / 1000) 
         console.log("Transferred: " + num_packets + " packets in: "+ time_taken_ms+ " ms data rate : ")
         console.log("Data rate(MBps) : "+data_rate_mb_s)
         console.log("Number of NACKS: "+num_nacks)
